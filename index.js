@@ -4,7 +4,9 @@ import {
   SystemProgram,
   sendAndConfirmTransaction,
   Connection,
-  clusterApiUrl
+  clusterApiUrl,
+  LAMPORTS_PER_SOL,
+  PublicKey
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import { decrypt, encrypt } from "./utils/encryption.js";
@@ -17,6 +19,7 @@ const createWallet = () => {
 
   let pub_key = keypair.publicKey.toBase58();
   let priv_key = keypair.secretKey;
+  // log(keypair);
 
   let stringed_version = bs58.encode(priv_key);
 
@@ -36,21 +39,16 @@ const importWallet = (privateKey) => {
 };
 
 const transferSoL = async (to_address, secret_key, amount) => {
-  let connection = new Connection(clusterApiUrl("testnet"));
+  let connection = new Connection("https://api.devnet.solana.com");
 
-  let recepient_byte_array = bs58.decode(to_address);
-  log(recepient_byte_array);
-  let sender_byte_array = bs58.decode(secret_key);
-  log(sender_byte_array);
-  let keyPair = Keypair.fromSecretKey(sender_byte_array);
+  let recepient_byte_array = to_address;
 
-  let sender_pub_key = sender_byte_array.slice(32);
-  log(sender_pub_key);
+  let sender_byte_array = bs58.decode(secret_key); // converts secret key (base58 string) into an Array Uint8Array .. of length 64
 
-  // let fromKeypair = Keypair.generate();
+  let keyPair = Keypair.fromSecretKey(sender_byte_array); // imports the user's wallet as a KeyPair object
+  let sender_pub_key = keyPair.publicKey; // extracting the sender's public key
 
-  // let toKeypair = Keypair.generate();
-  let transaction = new Transaction();
+  let transaction = new Transaction(); // creating a transaction builder object
 
   transaction.add(
     SystemProgram.transfer({
@@ -58,19 +56,23 @@ const transferSoL = async (to_address, secret_key, amount) => {
       toPubkey: recepient_byte_array,
       lamports: toLamport(amount)
     })
-  );
+  ); // building the transaction
+
+  log("===== sending transaction =======");
 
   let tx = await sendAndConfirmTransaction(connection, transaction, [keyPair]);
-  log(tx);
+
+  log("===== finished tx =======");
+  return tx;
 };
 
-log(
-  await transferSoL(
-    "DEP26TD3mDDH9NYaHkQgALeYfgPQuF2W5CRL6L35tZNv",
-    "5GGFQkQhoDtrRqdqrd4EdYkoAPPZDZSr9eR1SGSoHFb4gbjnLUYbb8mRpJNrHMNcrFKuZ6oLKyRNpNS9e55wkuXB",
-    0.002
-  )
-);
+// log(
+//   await transferSoL(
+//     "BPcJb1e3SSzNQBKQeSitN6juGCLCk4UhaaGd8GhsLN5",
+//     "5GGFQkQhoDtrRqdqrd4EdYkoAPPZDZSr9eR1SGSoHFb4gbjnLUYbb8mRpJNrHMNcrFKuZ6oLKyRNpNS9e55wkuXB",
+//     0.002
+//   )
+// );
 
 // "EXPLSnK25KiSXMGDaK4JQr5DCamUSHGBP11bwXhse5rm",
 // log(createWallet());
