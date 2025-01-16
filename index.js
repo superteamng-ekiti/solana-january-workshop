@@ -85,6 +85,7 @@ const querySolBalance = async (wallet_address) => {
 
   return fromLamport(balance);
 };
+
 const deploySPLToken = async (secret_key) => {
   const connection = new Connection(JSON_RPC, "confirmed");
   const wallet_array = bs58.decode(secret_key);
@@ -129,17 +130,39 @@ const deploySPLToken = async (secret_key) => {
     mint,
     tokenAccount.address,
     payer,
-    100_000_000_000 // because decimals for the mint are set to 9
+    toLamport(100) // because decimals for the mint are set to 9
   );
 
   return "hello";
 };
 
-log(
-  await deploySPLToken(
-    "5GGFQkQhoDtrRqdqrd4EdYkoAPPZDZSr9eR1SGSoHFb4gbjnLUYbb8mRpJNrHMNcrFKuZ6oLKyRNpNS9e55wkuXB"
-  )
-);
+const transferSPLToken = async (
+  to_address,
+  sender_priv_key,
+  token_address,
+  amount,
+  decimal
+) => {
+  const connection = new Connection(JSON_RPC, "confirmed");
+
+  sender_priv_key = bs58.decode(sender_priv_key);
+  const from_wallet = Keypair.fromSecretKey(sender_priv_key);
+
+  to_address = PublicKey(to_address);
+
+  const from_token_account = await getOrCreateAssociatedTokenAccount(
+    connection,
+    from_wallet,
+    token_address,
+    to_address
+  );
+};
+
+// log(
+//   await deploySPLToken(
+//     "5GGFQkQhoDtrRqdqrd4EdYkoAPPZDZSr9eR1SGSoHFb4gbjnLUYbb8mRpJNrHMNcrFKuZ6oLKyRNpNS9e55wkuXB"
+//   )
+// );
 
 // log(await querySolBalance("BPcJb1e3SSzNQBKQeSitN6juGCLCk4UhaaGd8GhsLN5"));
 
