@@ -156,6 +156,11 @@ const transferSPLToken = async (
     token_address,
     to_address
   );
+
+  log(
+    " this is tthe associatted oken accopuntt for this user: ",
+    from_token_account
+  );
 };
 
 // log(
