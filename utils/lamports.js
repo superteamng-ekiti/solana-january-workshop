@@ -1,5 +1,6 @@
 export const fromLamport = (value) => {
   let number_value = Number(value);
+  return number_value / 1000000000;
 };
 
 export const toLamport = (value) => {

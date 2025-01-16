@@ -8,11 +8,19 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey
 } from "@solana/web3.js";
+import {
+  createMint,
+  getAccount,
+  getMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo
+} from "@solana/spl-token";
 import bs58 from "bs58";
 import { decrypt, encrypt } from "./utils/encryption.js";
-import { toLamport } from "./utils/lamports.js";
+import { fromLamport, toLamport } from "./utils/lamports.js";
 
 const log = console.log;
+const JSON_RPC = "https://api.devnet.solana.com";
 
 const createWallet = () => {
   let keypair = Keypair.generate();
@@ -39,7 +47,7 @@ const importWallet = (privateKey) => {
 };
 
 const transferSoL = async (to_address, secret_key, amount) => {
-  let connection = new Connection("https://api.devnet.solana.com");
+  let connection = new Connection(JSON_RPC);
 
   let recepient_byte_array = to_address;
 
@@ -65,6 +73,75 @@ const transferSoL = async (to_address, secret_key, amount) => {
   log("===== finished tx =======");
   return tx;
 };
+
+const querySolBalance = async (wallet_address) => {
+  const connection = new Connection(JSON_RPC);
+
+  let public_Key = new PublicKey(wallet_address);
+
+  let balance = await connection.getBalance(public_Key);
+  log("======");
+  log(balance);
+
+  return fromLamport(balance);
+};
+const deploySPLToken = async (secret_key) => {
+  const connection = new Connection(JSON_RPC, "confirmed");
+  const wallet_array = bs58.decode(secret_key);
+  const payer = Keypair.fromSecretKey(wallet_array);
+  // log(payer);
+
+  let mint = await createMint(
+    connection,
+    payer,
+    payer.publicKey,
+    payer.publicKey,
+    9 // We are using 9 to match the CLI decimal default exactly
+  );
+
+  let mintt = mint.toBase58();
+  log("mint address");
+  log(mintt);
+
+  const mintInfo = await getMint(connection, mint);
+  log("mint supply");
+  log(mintInfo.supply);
+
+  const tokenAccount = await getOrCreateAssociatedTokenAccount(
+    connection,
+    payer,
+    mint,
+    payer.publicKey
+  );
+
+  log(
+    "associated account for newly minted token: ",
+    tokenAccount.address.toBase58()
+  );
+
+  const tokenAccountInfo = await getAccount(connection, tokenAccount.address);
+
+  log("associated account balance: ", tokenAccountInfo.amount);
+
+  await mintTo(
+    connection,
+    payer,
+    mint,
+    tokenAccount.address,
+    payer,
+    100_000_000_000 // because decimals for the mint are set to 9
+  );
+
+  return "hello";
+};
+
+log(
+  await deploySPLToken(
+    "5GGFQkQhoDtrRqdqrd4EdYkoAPPZDZSr9eR1SGSoHFb4gbjnLUYbb8mRpJNrHMNcrFKuZ6oLKyRNpNS9e55wkuXB"
+  )
+);
+
+// log(await querySolBalance("BPcJb1e3SSzNQBKQeSitN6juGCLCk4UhaaGd8GhsLN5"));
 
 // log(
 //   await transferSoL(
